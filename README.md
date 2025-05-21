@@ -22,7 +22,7 @@ The toolkit consists of two main scripts:
 ### Step 1: Reconstruction and Velocity Calculation
 
 ```bash
-python recon_flow.py /path/to/data_dir --venc 20
+python Reco_Bart_ESMRMB.py /path/to/data_dir --venc 20
 ```
 
 #### Arguments
@@ -40,7 +40,7 @@ This script will:
 ### Step 2: Strain Calculation
 
 ```bash
-python strain_calc.py --data-path /path/to/data --config config.json
+python Disp_Strain_ESMRMB.py --data-path /path/to/data --config config.json
 ```
 
 #### Required Arguments
@@ -81,12 +81,12 @@ The VelocityDirectionMatrix is a diagonal matrix represented as three values tha
 
 1. **Data Reconstruction**:
    ```bash
-   python recon_flow.py ./raw_data --venc 25
+   python Reco_Bart_ESMRMB.py ./raw_data --venc 25
    ```
 
 2. **Strain Calculation**:
    ```bash
-   python strain_calc.py --data-path ./raw_data --config settings.json --output-plot strain_results.png
+   python Disp_Strain_ESMRMB.py --data-path ./raw_data --config settings.json --output-plot strain_results.png
    ```
 
 ## Output
