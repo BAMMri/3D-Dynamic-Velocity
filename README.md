@@ -81,12 +81,12 @@ The VelocityDirectionMatrix is a diagonal matrix represented as three values tha
 
 1. **Data Reconstruction**:
    ```bash
-   python Reco_Bart_ESMRMB.py ./raw_data --venc 25
+   python Reco_Bart_ESMRMB.py  /path/to/data --venc 25
    ```
 
 2. **Strain Calculation**:
    ```bash
-   python Disp_Strain_ESMRMB.py --data-path ./raw_data --config settings.json --output-plot strain_results.png
+   python Disp_Strain_ESMRMB.py --data-path  /path/to/data --config settings.json --output-plot strain_results.png
    ```
 
 ## Output
