@@ -75,7 +75,7 @@ Example `config.json`:
 }
 ```
 
-The VelocityDirectionMatrix is a diagonal matrix represented as three values that controls the sign of each velocity component (x, y, z) obtained from the gradient probing sequnce. Use 1 for positive, -1 for negative direction.
+The VelocityDirectionMatrix is a diagonal matrix represented as three values that controls the sign of each velocity component (x, y, z) obtained from the gradient [probing sequence](https://github.com/BAMMri/Pulseq-4DFlow/blob/main/gradient_probing.py). Use 1 for positive, -1 for negative direction.
 
 ## Example Workflow
 
