@@ -2,7 +2,7 @@ import os
 import numpy as np
 import sys
 
-# Add bart path
+sys.path.append('/Users/sabine/bart/python')
 
 import bart
 from bart import cfl
@@ -26,20 +26,23 @@ def reconstruct_and_process_all(data_dir, venc_value=20):
         cfl_path = os.path.join(data_dir, file_base)
         print(f"Reading: {cfl_path}")
         ksp = cfl.readcfl(cfl_path)
+        ksp_cc = bart.bart(1, "cc -p 8", ksp)
+        print(f"Applied coil compression: {ksp.shape[-1]} → {ksp_cc.shape[-1]} coils")
 
         # Infer dimensions
-        num_x, num_y, num_slices = ksp.shape[0:3]
-        num_cardiac_phases = ksp.shape[6]
-        num_vencs = ksp.shape[11]
-        print(f"Shape: {ksp.shape}, num_vencs: {num_vencs}, num_cardiac_phases: {num_cardiac_phases}")
+        num_x, num_y, num_slices = ksp_cc.shape[0:3]
+        num_cardiac_phases = ksp_cc.shape[6]
+        num_vencs = ksp_cc.shape[11]
+        print(f"Shape: {ksp_cc.shape}, num_vencs: {num_vencs}, num_cardiac_phases: {num_cardiac_phases}")
 
         # Reconstruct images for all vencs and cardiac phases
         recon = np.zeros((num_x, num_y, num_slices, num_cardiac_phases, num_vencs), dtype=np.complex64)
         for venc in range(num_vencs):
             for phase in range(num_cardiac_phases):
-                all_ksp_venc_phase = ksp[:, :, :, :, 0, 0, phase, 0, 0, 0, 0, venc]
-                all_ksp_esprit = ksp[:, :, :, :, 0, 0, phase, 0, 0, 0, 0, 0]
-                sensitivities = bart.bart(1, f"ecalib -c0 -m1 -r12:9", all_ksp_esprit)
+                all_ksp_venc_phase = ksp_cc[:, :, :, :, 0, 0, phase, 0, 0, 0, 0, venc]
+                all_ksp_esprit = ksp_cc[:, :, :, :, 0, 0, phase, 0, 0, 0, 0, 0]
+                r_value = args.ecalib_r
+                sensitivities = bart.bart(1, f"ecalib -c0 -m1 -r{r_value}", all_ksp_esprit)
                 l1_wav_reg = 0.005
                 image_l1_tv_wav = bart.bart(
                     1,
@@ -97,5 +100,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Reconstruct and process 4D flow MRI data.")
     parser.add_argument("data_dir", type=str, help="Path to the data directory containing .cfl/.hdr files.")
     parser.add_argument("--venc", type=float, default=20, help="VENC value in cm/s.")
+    parser.add_argument("--ecalib-r", type=str, default="12:9", help="Value to use for the -r argument in ecalib (e.g., 12:9)")
     args = parser.parse_args()
     reconstruct_and_process_all(args.data_dir, venc_value=args.venc)

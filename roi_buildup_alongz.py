@@ -106,8 +106,8 @@ class ArrayROIProcessor:
         self.selected_dim4 = selected_dim4
 
         # Get data for selected slice and dimension
-        self.slice_data1 = data1[self.selected_slice, :, :, :, :]
-        self.slice_data2 = None if data2 is None else data2[self.selected_slice, :, :, :, :]
+        self.slice_data1 = data1[:, :, self.selected_slice, :, :]
+        self.slice_data2 = None if data2 is None else data2[:, :, self.selected_slice, :, :]
 
         self.roi_processor = None
         self.dataset_names = ['Dataset 1', 'Dataset 2']
@@ -257,7 +257,7 @@ class ArrayROIProcessor:
             return
 
         # Create rotated ROI mask
-        roi_mask = self.roi_processor.create_rotated_mask((self.data1.shape[1], self.data1.shape[2]))
+        roi_mask = self.roi_processor.create_rotated_mask((self.data1.shape[0], self.data1.shape[1]))
         if roi_mask is None:
             return
 
@@ -468,8 +468,8 @@ repetition_time = 7.2  # ms
 venc = 25.0  # Default VENC value
 # vmin=-2
 # vmax=0.5
-vmin=-2
-vmax=1
+vmin=0
+vmax=0.5
 # --------------------
 
 # Load configuration from JSON file
@@ -502,33 +502,33 @@ if config:
         print(f"Using second data path from config: {file_path2}")
 
 # Load datasets
-#
-# try:
-#     data1 = np.load(file_path1)
-#     dataset1_name = os.path.basename(file_path1).replace('.npy', '')
-#     print(f"Loaded {dataset1_name} with shape {data1.shape}")
-# except Exception as e:
-#     print(f"Error loading first dataset: {e}")
-#     raise SystemExit("Cannot continue without first dataset.")
 
 try:
-    data1 = -np.load(file_path1)
-    print("data", data1.shape)
+    data1 = np.load(file_path1)
     dataset1_name = os.path.basename(file_path1).replace('.npy', '')
     print(f"Loaded {dataset1_name} with shape {data1.shape}")
+except Exception as e:
+    print(f"Error loading first dataset: {e}")
+    raise SystemExit("Cannot continue without first dataset.")
 
-    mask_path = "/Volumes/ExtremeSSD/AA_PhD_Projects/MRI_Koper/DICOM/25081920/BEAT_FQ-split/Subject1/DATA_sub01_mask_SN54_10percent.npy"
-    mask_bool = np.load(mask_path)
-    print("mask", mask_bool.shape)
-    print(f"Loaded mask with shape {mask_bool.shape}, dtype: {mask_bool.dtype}")
-
-    # Expand mask: (112,66,44,17) -> (112,66,44,1,17)
-    mask_bool = mask_bool[:, :, :, np.newaxis, :]
-
-    # Repeat across component dimension -> (112,66,44,3,17)
-    mask_bool = np.repeat(mask_bool, data1.shape[3], axis=3)
-
-    print("expanded mask", mask_bool.shape)
+# try:
+#     data1 = np.load(file_path1)
+#     print("data", data1.shape)
+#     dataset1_name = os.path.basename(file_path1).replace('.npy', '')
+#     print(f"Loaded {dataset1_name} with shape {data1.shape}")
+#
+#     mask_path = "/Volumes/ExtremeSSD/AA_PhD_Projects/MRI_Koper/DICOM/25081920/BEAT_FQ-split/Subject1/DATA_sub01_mask_SN54_10percent.npy"
+#     mask_bool = np.load(mask_path)
+#     print("mask", mask_bool.shape)
+#     print(f"Loaded mask with shape {mask_bool.shape}, dtype: {mask_bool.dtype}")
+#
+#     # Expand mask: (112,66,44,17) -> (112,66,44,1,17)
+#     mask_bool = mask_bool[:, :, :, np.newaxis, :]
+#
+#     # Repeat across component dimension -> (112,66,44,3,17)
+#     mask_bool = np.repeat(mask_bool, data1.shape[3], axis=3)
+#
+#     print("expanded mask", mask_bool.shape)
 
     # Apply mask
     data1 = data1 * mask_bool.astype(data1.dtype)
@@ -655,7 +655,7 @@ btn_roi.on_clicked(roi_processor.process_roi)
 
 # Add slider for slice selection (first dimension)
 ax_slice = plt.axes([0.2, 0.05, 0.4, 0.03])
-slice_slider = Slider(ax_slice, 'Slice', 0, data1.shape[0] - 1, valinit=slice_idx, valstep=1)
+slice_slider = Slider(ax_slice, 'Slice', 0, data1.shape[2] - 1, valinit=slice_idx, valstep=1)
 
 
 # Function to update when slice changes

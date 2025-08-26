@@ -1,0 +1,7 @@
+{
+  "CardiacNumberOfImages": 27,
+  "InPlaneResolution": [1.5, 1.5],
+  "SliceThickness": 1.5,
+  "RepetitionTime": 7,
+  "VelocityDirectionMatrix": [1, 1, 1]
+}
