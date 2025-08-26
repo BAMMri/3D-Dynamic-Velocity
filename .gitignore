@@ -1,0 +1,16 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+._*
+
+# IDE/project files
+.idea/
+.vscode/
+
+# Python virtual env
+.venv/
+venv/
+
+# Results/output
+Results/
+17-07-2025-voluntaryVSnmes/
