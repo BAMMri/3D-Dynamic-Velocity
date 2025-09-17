@@ -229,19 +229,24 @@ def calc_disp_3d(flow_x, flow_y, flow_z, info, mask):
 
     print(f"ActInterpFacX: {ActInterpFacX}, ActInterpFacY: {ActInterpFacY}, ActInterpFacZ: {ActInterpFacZ}")
 
-    # Calculate cumulative displacements
+    # Calculate cumulative displacements with Forward/Backward integration
     # First phase has zero displacement
     for iph in range(1, nPhases):
         for ix in range(dimx):
             for iy in range(dimy):
                 for iz in range(dimz):
                     if mask[ix, iy, iz]:
-                        # Get position at previous time step including displacement
-                        new_xn = ix + dispVx[ix, iy, iz, iph - 1]
-                        new_yn = iy + dispVy[ix, iy, iz, iph - 1]
-                        new_zn = iz + dispVz[ix, iy, iz, iph - 1]
+                        # Forward displacement: current position + current displacement
+                        new_xn = ix + dispVx[ix, iy, iz, iph]
+                        new_yn = iy + dispVy[ix, iy, iz, iph]
+                        new_zn = iz + dispVz[ix, iy, iz, iph]
 
-                        # Get interpolated indices for this position
+                        # Backward displacement: current position - previous displacement
+                        new_xnm1 = ix - dispVx[ix, iy, iz, iph - 1]
+                        new_ynm1 = iy - dispVy[ix, iy, iz, iph - 1]
+                        new_znm1 = iz - dispVz[ix, iy, iz, iph - 1]
+
+                        # Get interpolated indices for forward position
                         inew_xn, inew_yn, inew_zn = calcInterpolatedIndex3D(
                             new_xn,
                             new_yn,
@@ -251,15 +256,34 @@ def calc_disp_3d(flow_x, flow_y, flow_z, info, mask):
                             ActInterpFacZ,
                         )
 
-                        # Get velocity at this new position from the interpolated grid
-                        current_velocity_x = interpDispX[inew_xn, inew_yn, inew_zn, iph]
-                        current_velocity_y = interpDispY[inew_xn, inew_yn, inew_zn, iph]
-                        current_velocity_z = interpDispZ[inew_xn, inew_yn, inew_zn, iph]
+                        # Get interpolated indices for backward position
+                        inew_xnm1, inew_ynm1, inew_znm1 = calcInterpolatedIndex3D(
+                            new_xnm1,
+                            new_ynm1,
+                            new_znm1,
+                            ActInterpFacX,
+                            ActInterpFacY,
+                            ActInterpFacZ,
+                        )
 
-                        # Calculate total displacement as previous displacement plus new displacement
-                        dispVx[ix, iy, iz, iph] = dispVx[ix, iy, iz, iph - 1] + current_velocity_x
-                        dispVy[ix, iy, iz, iph] = dispVy[ix, iy, iz, iph - 1] + current_velocity_y
-                        dispVz[ix, iy, iz, iph] = dispVz[ix, iy, iz, iph - 1] + current_velocity_z
+                        # Sample velocities at both positions
+                        forward_velocity_x = interpDispX[inew_xn, inew_yn, inew_zn, iph]
+                        forward_velocity_y = interpDispY[inew_xn, inew_yn, inew_zn, iph]
+                        forward_velocity_z = interpDispZ[inew_xn, inew_yn, inew_zn, iph]
+
+                        backward_velocity_x = interpDispX[inew_xnm1, inew_ynm1, inew_znm1, iph - 1]
+                        backward_velocity_y = interpDispY[inew_xnm1, inew_ynm1, inew_znm1, iph - 1]
+                        backward_velocity_z = interpDispZ[inew_xnm1, inew_ynm1, inew_znm1, iph - 1]
+
+                        # Combine forward and backward velocities (delta displacement)
+                        delta_disp_x = backward_velocity_x + forward_velocity_x
+                        delta_disp_y = backward_velocity_y + forward_velocity_y
+                        delta_disp_z = backward_velocity_z + forward_velocity_z
+
+                        # Calculate total displacement as previous displacement plus delta displacement
+                        dispVx[ix, iy, iz, iph] = dispVx[ix, iy, iz, iph - 1] + delta_disp_x
+                        dispVy[ix, iy, iz, iph] = dispVy[ix, iy, iz, iph - 1] + delta_disp_y
+                        dispVz[ix, iy, iz, iph] = dispVz[ix, iy, iz, iph - 1] + delta_disp_z
 
     print(f"Displacement shapes: {dispVx.shape}, {dispVy.shape}, {dispVz.shape}")
 
@@ -367,10 +391,11 @@ def calc_strain_3d(dispX, dispY, dispZ, mask, fx=None, fy=None, fz=None):
     return Eig_v
 
 
-def sum_strain_3d(Eig_v, mask, nPhases=27):
+def sum_strain_3d(Eig_v, mask, info):
     """
     Summarize strain values by calculating median values within mask.
     """
+    nPhases = int(info['CardiacNumberOfImages'])
     e1_Line = np.zeros(nPhases)  # First principal strain (largest eigenvalue)
     e2_Line = np.zeros(nPhases)  # Second principal strain
     e3_Line = np.zeros(nPhases)  # Third principal strain (smallest eigenvalue)
@@ -441,64 +466,32 @@ def main():
     # Find velocity files automatically
     data_path = args.data_path
     prefix = args.prefix or "DATA"
+    
+    # Find the new single file
+    processed_file_pattern = os.path.join(data_path, f"{prefix}*_processed_data.npy")
+    processed_files = glob.glob(processed_file_pattern)
 
-    # Try to find velocity files
-    vel_x_pattern = os.path.join(data_path, f"{prefix}*velocity_x.npy")
-    vel_y_pattern = os.path.join(data_path, f"{prefix}*velocity_y.npy")
-    vel_z_pattern = os.path.join(data_path, f"{prefix}*velocity_z.npy")
+    if not processed_files:
+        raise FileNotFoundError(f"Could not find processed data file in {data_path} with prefix {prefix}")
 
-    x_files = glob.glob(vel_x_pattern)
-    y_files = glob.glob(vel_y_pattern)
-    z_files = glob.glob(vel_z_pattern)
+    processed_file = processed_files[0]
+    print(f"Found processed data file: {os.path.basename(processed_file)}")
 
-    if not (x_files and y_files and z_files):
-        raise FileNotFoundError(f"Could not find velocity files in {data_path} with prefix {prefix}")
+    # Load the dictionary from the .npy file
+    processed_data = np.load(processed_file, allow_pickle=True).item()
 
-    # Use the first match for each component
-    x_file = x_files[0]
-    y_file = y_files[0]
-    z_file = z_files[0]
+    # Extract the velocities and mask
+    velocities = processed_data['velocities']
+    mask_4d = processed_data['mask']
+    mask = mask_4d[..., 0]
 
-    print(
-        f"Found velocity files:\n  X: {os.path.basename(x_file)}\n  Y: {os.path.basename(y_file)}\n  Z: {os.path.basename(z_file)}")
+    # Split the velocities array into x, y, and z components
+    flow_x = velocities[..., 0]
+    flow_y = velocities[..., 1]
+    flow_z = velocities[..., 2]
 
-    flow_x = np.load(x_file)
-    flow_y = np.load(y_file)
-    flow_z = np.load(z_file)
-    print(f"Velocity data shape: {flow_x.shape}")
-
-    # Load mask
-    if args.mask:
-        print(f"Loading mask from: {args.mask}")
-        mask_data = np.load(args.mask)
-    else:
-        # Try to find mask automatically
-        mask_pattern = os.path.join(data_path, f"mask*{prefix}*.npy")
-        mask_files = glob.glob(mask_pattern)
-
-        if not mask_files:
-            print("No mask file found. Creating uniform mask...")
-            mask_data = np.ones_like(flow_x[:, :, :, 0])
-        else:
-            mask_file = mask_files[0]
-            print(f"Found mask file: {os.path.basename(mask_file)}")
-            mask_data = np.load(mask_file)
-
-    # Handle different mask shapes
-    if len(mask_data.shape) == 4:  # 4D mask (3D + time)
-        print("Detected 4D mask, using first time point")
-        mask = mask_data[:, :, :, 0]
-    else:
-        mask = mask_data
-
-    # # Setup info dictionary
-    # info = {
-    #     'CardiacNumberOfImages': flow_z.shape[3],
-    #     'InPlaneResolution': [args.in_plane_resolution, args.in_plane_resolution],
-    #     'SliceThickness': args.slice_thickness,
-    #     'RepetitionTime': args.repetition_time,
-    #     'NofPoints': flow_z.shape[0]
-    # }
+    print(f"Velocity data shape: {velocities.shape}")
+    print(f"Mask data shape: {mask.shape}")
 
     # Load configuration from JSON file
     print(f"Loading configuration from: {args.config}")
@@ -508,9 +501,9 @@ def main():
     info = {}
     for key, value in config.items():
         if key == 'CardiacNumberOfImages':
-            info[key] = flow_z.shape[3]
+             info[key] = velocities.shape[3]
         elif key == 'NofPoints':
-            info[key] = flow_z.shape[0]
+            info[key] = velocities.shape[0]
         elif key == 'VelocityDirectionMatrix':
             # Ensure the velocity direction matrix has 3 elements
             if len(value) != 3:
@@ -569,18 +562,18 @@ def main():
         print(f"Using slice index: {args.slice_index}")
         if len(Eig_v.shape) == 5:  # 3D + 3 eigenvalues + phases
             slice_eig = Eig_v[args.slice_index, :, :, :, :]
-            if len(use_mask.shape) == 3:  # 3D mask
-                slice_mask = use_mask[args.slice_index, :, :]
+            if len(use_mask.shape) == 4:  # 3D mask
+                slice_mask = use_mask[args.slice_index, :, :,:]
             else:
                 slice_mask = use_mask
         else:
             slice_eig = Eig_v
             slice_mask = use_mask
 
-        e1_Line, e1_max, e2_Line, e2_max, e3_Line, e3_max = sum_strain_3d(slice_eig, slice_mask)
+        e1_Line, e1_max, e2_Line, e2_max, e3_Line, e3_max = sum_strain_3d(slice_eig, slice_mask,info)
     else:
         # Process full volume
-        e1_Line, e1_max, e2_Line, e2_max, e3_Line, e3_max = sum_strain_3d(Eig_v, use_mask)
+        e1_Line, e1_max, e2_Line, e2_max, e3_Line, e3_max = sum_strain_3d(Eig_v, use_mask,info)
 
     # Display results
     print(f"First principal strain max: {e1_max}")
