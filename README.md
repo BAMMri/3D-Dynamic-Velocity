@@ -72,11 +72,13 @@ Example `config.json`:
   "SliceThickness": 1.5,
   "RepetitionTime": 6.7,
   "VelocityDirectionMatrix": [1, 1, 1]
-  "AffineMatrix":eye(4)
+  "AffineMatrix":np.eye(4)
 }
 ```
 
 The VelocityDirectionMatrix is a diagonal matrix represented as three values that controls the sign of each velocity component (x, y, z) obtained from the gradient [probing sequence](https://github.com/BAMMri/Pulseq-4DFlow/blob/main/gradient_probing.py). Use 1 for positive, -1 for negative direction.
+
+The affine matrix is extracted from the raw data after conversion to ISMRMRD data with the get_matrix script, if none is provided a identy matrix is used as stand in.
 
 ## Example Workflow
 
