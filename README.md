@@ -98,3 +98,4 @@ The affine matrix is extracted from the raw data after conversion to ISMRMRD dat
 - Displacement vectors (.npy files, optional)
 - Strain eigenvalues (.npy file)
 - Strain plot (.png file, optional)
+- Nifti of the reconstructed data and velocity maps (.nii file, optional)
