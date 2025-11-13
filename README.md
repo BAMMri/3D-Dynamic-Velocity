@@ -16,13 +16,13 @@ For BART toolbox installation, follow instructions at [BART website](https://mri
 
 The toolkit consists of two main scripts:
 
-1. `Reco_Bart_ESMRMB.py` - Reconstructs images from k-space data and calculates velocity components
-2. `Disp_Strain_ESMRMB.py` - Calculates 3D strain from velocity data
+1. `Reco_Bart_GPU.py` - Reconstructs images from k-space data and calculates velocity components
+2. `calc_strain.py` - Calculates 3D strain from velocity data
 
 ### Step 1: Reconstruction and Velocity Calculation
 
 ```bash
-python Reco_Bart_ESMRMB.py /path/to/data_dir --venc 20
+python Reco_Bart_GPU.py /path/to/data_dir --venc 20
 ```
 
 #### Arguments
@@ -40,7 +40,7 @@ This script will:
 ### Step 2: Strain Calculation
 
 ```bash
-python Disp_Strain_ESMRMB.py --data-path /path/to/data --config config.json
+python calc_strain.py --data-path /path/to/data --config config.json
 ```
 
 #### Required Arguments
@@ -72,6 +72,7 @@ Example `config.json`:
   "SliceThickness": 1.5,
   "RepetitionTime": 6.7,
   "VelocityDirectionMatrix": [1, 1, 1]
+  "AffineMatrix":eye(4)
 }
 ```
 
@@ -81,12 +82,12 @@ The VelocityDirectionMatrix is a diagonal matrix represented as three values tha
 
 1. **Data Reconstruction**:
    ```bash
-   python Reco_Bart_ESMRMB.py  /path/to/data --venc 25
+   python Reco_Bart_GPU.py  /path/to/data --venc 25
    ```
 
 2. **Strain Calculation**:
    ```bash
-   python Disp_Strain_ESMRMB.py --data-path  /path/to/data --config settings.json --output-plot strain_results.png
+   python calc_strain.py --data-path  /path/to/data --config settings.json --output-plot strain_results.png
    ```
 
 ## Output
