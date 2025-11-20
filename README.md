@@ -16,13 +16,13 @@ For BART toolbox installation, follow instructions at [BART website](https://mri
 
 The toolkit consists of two main scripts:
 
-1. `Reco_Bart_GPU.py` - Reconstructs images from k-space data and calculates velocity components
+1. `Reco_GPU.py` - Reconstructs images from k-space data and calculates velocity components
 2. `calc_strain.py` - Calculates 3D strain from velocity data
 
 ### Step 1: Reconstruction and Velocity Calculation
 
 ```bash
-python Reco_Bart_GPU.py /path/to/data_dir --venc 20
+python Reco_GPU.py /path/to/data_dir --venc 20
 ```
 
 #### Arguments
@@ -84,7 +84,7 @@ The affine matrix is extracted from the raw data after conversion to ISMRMRD dat
 
 1. **Data Reconstruction**:
    ```bash
-   python Reco_Bart_GPU.py  /path/to/data --venc 25
+   python Reco_GPU.py  /path/to/data --venc 25
    ```
 
 2. **Strain Calculation**:
