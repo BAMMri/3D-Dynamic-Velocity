@@ -11,7 +11,7 @@ A collection of Python tools for processing 4D flow MRI data, including reconstr
 - tqdm
 - BART Toolbox (for reconstruction)
 
-For BART toolbox installation, follow instructions at [BART website](https://mrirecon.github.io/bart/).
+For BART toolbox installation, follow instructions at [BART website](https://mrirecon.github.io/bart/). With the BART Python wrapper in the respective environment. 
 
 ## Data Processing Pipeline
 
