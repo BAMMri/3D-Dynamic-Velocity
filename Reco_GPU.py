@@ -8,7 +8,7 @@ os.environ['BART_CUDA_GPU'] = '1'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'  # Use GPU 0, change if you have multiple GPUs
 
 # Add your bart path
-sys.path.append('/home/marta/Projects/bart_projects/bart/python')
+
 
 import bart
 from bart import cfl
